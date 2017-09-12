@@ -9,6 +9,6 @@ import java.time.LocalDate;
 public interface UserProjection {
     String getId();
 
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    @DateTimeFormat(pattern = "yyyy-MM-ddTHH:mm:ss.SSS")
     LocalDate getInstallDate();
 }

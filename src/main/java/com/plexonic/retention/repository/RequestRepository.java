@@ -15,7 +15,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
-public interface RequestRepository extends JpaRepository<Request, Long>, QueryDslPredicateExecutor<Request> {
+public interface RequestRepository extends JpaRepository<Request, Long>,
+        QueryDslPredicateExecutor<Request> {
     @Override
     List<Request> findAll(Predicate predicate);
 }

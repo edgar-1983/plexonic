@@ -36,7 +36,11 @@ public class AnalyticsController {
 
     @PutMapping("/dau")
     public Page<UserProjection> getDau(@RequestBody @Valid DauPayload payload,
+                                       BindingResult bindingResult,
                                        Pageable pageable) {
+        if (bindingResult.hasErrors()) {
+            throw new InvalidRequestException("Validation issues", bindingResult);
+        }
         return requestService.getDau(payload.getDates(), pageable).map(user ->
                 projectionFactory.createProjection(UserProjection.class, user));
     }

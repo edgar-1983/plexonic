@@ -21,7 +21,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static com.plexonic.retention.model.QRequest.request;
 import static java.math.BigDecimal.valueOf;
 import static java.util.stream.Collectors.toList;
 
@@ -36,8 +38,7 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public Page<User> getDau(Set<LocalDateTime> requestDates, Pageable pageable) {
-        BooleanExpression predicate = QRequest.request.requestDate.in(requestDates);
-        List<Request> requests =requestRepository.findAll(predicate);
+        List<Request> requests = requestRepository.findAll(buildPredicate(requestDates));
 
         if (requests.isEmpty()) {
             throw new NoSuchElementException("No active users found for specified dates");
@@ -52,17 +53,29 @@ public class RequestServiceImpl implements RequestService {
         LocalDateTime startDate = payload.getStartDate();
         LocalDateTime endDate = startDate.plusDays(payload.getDay());
 
-        QRequest request = QRequest.request;
+        //Fetch users registered before start date
         BooleanExpression predicateBefore = request.user.installDate.lt(startDate);
-        BooleanExpression predicateAfter = predicateBefore.and(request.requestDate.between(startDate,endDate));
+        //Fetch users registered before start date who have returned within specified days after start date
+        BooleanExpression predicateAfter = predicateBefore.and(request.requestDate.between(startDate, endDate));
 
-        long startUsers = requestRepository.findAll(predicateBefore).stream().map(Request::getUser).count();
-        long remainingUsers = requestRepository.findAll(predicateAfter).stream().map(Request::getUser).count();
+        long startUsers = requestRepository.findAll(predicateBefore).stream().map(Request::getUser).distinct().count();
+        long remainingUsers = requestRepository.findAll(predicateAfter).stream().map(Request::getUser).distinct().count();
         if (startUsers == 0) {
             return BigDecimal.ZERO;
         }
 
         return valueOf(remainingUsers).divide(valueOf(startUsers), 4, RoundingMode.HALF_DOWN)
                 .multiply(valueOf(100));
+    }
+
+    private BooleanExpression buildPredicate(Set<LocalDateTime> requestDates) {
+        //Need to implement filtering this way since LocalDateTime#equals() compares both date and time
+        //while in our case time of payload date is always UTC midnight and may not match with that in db.
+        List<Integer> yearList = requestDates.stream().map(LocalDateTime::getYear).collect(toList());
+        List<Integer> monthList = requestDates.stream().map(LocalDateTime::getMonthValue).collect(toList());
+        List<Integer> dayList = requestDates.stream().map(LocalDateTime::getDayOfMonth).collect(toList());
+        return request.requestDate.year().in(yearList)
+                .and(request.requestDate.month().in(monthList)
+                        .and(request.requestDate.dayOfMonth().in(dayList)));
     }
 }
