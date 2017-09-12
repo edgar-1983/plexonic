@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet author="edgar" id="1">
+        <createTable tableName="request">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="request_date" type="datetime" defaultValueComputed="current_timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createTable tableName="plex_user">
+            <column name="user_id" type="varchar(255)" autoIncrement="false">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="install_date" type="datetime" defaultValueComputed="current_timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <loadData encoding="UTF-8"
+                  file="migration/users.csv"
+                  schemaName="public"
+                  tableName="plex_user">
+            <column name="user_id"/>
+            <column name="install_date"/>
+        </loadData>
+        <loadData encoding="UTF-8"
+                  file="migration/requests.csv"
+                  tableName="request">
+            <column name="user_id"/>
+            <column name="request_date"/>
+        </loadData>
+        <addForeignKeyConstraint baseTableName="request"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_user"
+                                 referencedTableName="plex_user"
+                                 referencedColumnNames="user_id"
+                                 onDelete="CASCADE"
+        />
+    </changeSet>
+</databaseChangeLog>
